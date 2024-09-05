@@ -1,0 +1,5 @@
+defaults:
+  - detectors: yolo
+path: /media/alr_admin/Data/atalay/new_data
+task: pickPlacing
+outpath: /media/alr_admin/ECB69036B69002EE/vision_model_tests
