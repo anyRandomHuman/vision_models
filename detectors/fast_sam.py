@@ -3,8 +3,10 @@ import torch
 import numpy as np
 import cv2
 
+from detectors.obj_detector import Object_Detector
 
-class FastSAMDetector:
+
+class FastSAMDetector(Object_Detector):
     def __init__(
         self,
         to_tensor=False,
@@ -12,16 +14,15 @@ class FastSAMDetector:
         path="/home/alr_admin/david/praktikum/d3il_david/detector_models/FastSAM-x.pt",
         imgsz=(256, 128),
     ) -> None:
+        super.__init__(to_tensor, device)
         overrides = dict(
             task="segment", mode="predict", model=path, save=False, imgsz=imgsz
         )
         self.model = FastSAMPredictor(overrides=overrides)
-        self.to_tensor = to_tensor
-        self.device = device
 
-    def predict(self, img, **kwargs):
-        self.img = img
-        self.prediction = self.model(img)
+    def predict(self, input, **kwargs):
+        self.input = input
+        self.prediction = self.model(input)
         self.prediction = self.model.prompt(self.prediction, **kwargs)
 
     def get_box_feature(self):
@@ -44,33 +45,8 @@ class FastSAMDetector:
         p = self.prediction[0]
         return p.masks.data
 
-    def get_Bbox(self):
+    def get_box_feature(self):
         return self.prediction[0].boxes.xyxy
-
-    @staticmethod
-    def joint_feature(features):
-        joint_mask = torch.zeros(features.shape[:-1])
-        for i in range(features.shape[-1]):
-            joint_mask = torch.logical_or(
-                joint_mask, torch.from_numpy(features[:, :, i])
-            )
-        return joint_mask
-
-    def get_masked_img(self):
-        return self.prediction[0].plot(
-            labels=False, boxes=False, conf=False, probs=False, color_mode="class"
-        )
-        # img = (
-        #     torch.where(
-        #         torch.unsqueeze(feature, -1).repeat_interleave(3, -1),
-        #         torch.from_numpy(self.img),
-        #         torch.zeros(self.img.shape),
-        #     )
-        #     .int()
-        #     .numpy()
-        # )
-        # return img.astype(np.uint8)
-
 
 if __name__ == "__main__":
 
