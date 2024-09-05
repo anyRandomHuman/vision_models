@@ -5,6 +5,7 @@ import numpy as np
 
 import wandb
 from omegaconf import DictConfig, OmegaConf
+import ultralytics
 
 
 def segment_all_imgs(path: Path, detector, outpath, task):
@@ -25,4 +26,4 @@ def main(cfg: DictConfig):
     path = cfg.path
     outpath = cfg.outpath
     task = cfg.task
-    segment_all_imgs(path, detector, outpath, task)
+    results = ultralytics.YOLO(model="", task="segmentation")
