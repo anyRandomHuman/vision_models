@@ -16,6 +16,7 @@ from third_party.CenterNet2.centernet.config import add_centernet_config
 # from ...centernet.config import add_centernet_config
 from third_party.Detic.detic.config import add_detic_config
 from third_party.Detic.detic.modeling.utils import reset_cls_test
+from third_party.Detic.detic.modeling.text.text_encoder import build_text_encoder
 cup_pred_class = 41
 stacked_cups_class = 39
 BOX_FEATURE = "box"
@@ -26,6 +27,7 @@ class Detectron(Object_Detector):
     def __init__(
         self,path='', to_tensor=False,
         device="cuda",
+        classes=None
     ):
         super().__init__(path=path, to_tensor=to_tensor, device=device)
         cfg = get_cfg()
@@ -37,7 +39,35 @@ class Detectron(Object_Detector):
         cfg.MODEL.ROI_BOX_HEAD.ZEROSHOT_WEIGHT_PATH = 'rand'
         cfg.MODEL.ROI_HEADS.ONE_CLASS_PER_PROPOSAL = True # For better visualization purpose. Set to False for all classes.
         # cfg.MODEL.DEVICE='cpu' # uncomment this to use cpu-only mode.
+        
         self.predictor = DefaultPredictor(cfg)
+        
+        if classes: 
+            self.metadata = MetadataCatalog.get("__unused")
+            self.metadata.thing_classes = classes # Change here to try your own vocabularies!
+            classifier = Detectron._get_clip_embeddings(self.metadata.thing_classes)
+        else:
+            BUILDIN_CLASSIFIER = {
+                'lvis': 'third_party/Detic/datasets/metadata/lvis_v1_clip_a+cname.npy',
+                'objects365': 'third_party/Detic/datasets/metadata/o365_clip_a+cnamefix.npy',
+                'openimages': 'third_party/Detic/datasets/metadata/oid_clip_a+cname.npy',
+                'coco': 'third_party/Detic/datasets/metadata/coco_clip_a+cname.npy',
+            }
+
+            BUILDIN_METADATA_PATH = {
+                'lvis': 'lvis_v1_val',
+                'objects365': 'objects365_v2_val',
+                'openimages': 'oid_val_expanded',
+                'coco': 'coco_2017_val',
+            }
+
+            vocabulary = 'lvis' # change to 'lvis', 'objects365', 'openimages', or 'coco'
+            self.metadata = MetadataCatalog.get(BUILDIN_METADATA_PATH[vocabulary])
+            classifier = BUILDIN_CLASSIFIER[vocabulary]
+        num_classes = len(self.metadata.thing_classes)
+        reset_cls_test(self.predictor.model, classifier, num_classes)
+        
+        
 
     def predict(self, img):
         super().predict(img)
@@ -63,5 +93,18 @@ class Detectron(Object_Detector):
             features = features.to(self.device)
         return features
 
+    @staticmethod
+    def _get_clip_embeddings(vocabulary, prompt='a '):
+        text_encoder = build_text_encoder(pretrain=True)
+        text_encoder.eval()
+        texts = [prompt + x for x in vocabulary]
+        emb = text_encoder(texts).detach().permute(1, 0).contiguous().cpu()
+        return emb
 
-
+    def get_visualized_imgs(self):
+        v = Visualizer(self.input, self.metadata)
+        out = v.draw_instance_predictions(self.results["instances"].to("cpu"))
+        
+        print([self.metadata.thing_classes[x] for x in self.results["instances"].pred_classes.cpu().tolist()])
+        
+        return out.get_image()
