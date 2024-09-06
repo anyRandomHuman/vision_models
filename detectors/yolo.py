@@ -6,7 +6,7 @@ from obj_detector import Object_Detector
 
 class Yolo_Detrector(Object_Detector):
     def __init__(self, path, to_tensor, device) -> None:
-        super().__init__(to_tensor, device)
+        super().__init__(path=path, to_tensor=to_tensor, device=device)
         
         self.model = YOLO(path)
         self.to_tensor = to_tensor
@@ -19,8 +19,13 @@ class Yolo_Detrector(Object_Detector):
     def track(self, img):
         self.img = img
         self.prediction = self.model.track(img, persist=True)
+        
+        
+    def get_mask_feature(self):
+        p = self.prediction[0]
+        return p.masks.data
 
-    def get_feature(self, top_n):
+    def get_box_feature(self):
         # igonre top_n, always retrive all
         p = self.prediction[0]
         num_boxes = p.boxes.shape[0]

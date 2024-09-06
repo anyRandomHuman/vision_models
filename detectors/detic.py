@@ -28,17 +28,16 @@ class Detectron(Object_Detector):
         device="cuda",
     ):
         super().__init__(path=path, to_tensor=to_tensor, device=device)
-        self.cfg = get_cfg()
-        self.cfg.merge_from_file(
-            model_zoo.get_config_file(
-                "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
-            )
-        )
-        self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
-        self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(
-            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
-        )
-        self.predictor = DefaultPredictor(self.cfg)
+        cfg = get_cfg()
+        add_centernet_config(cfg)
+        add_detic_config(cfg)
+        cfg.merge_from_file("third_party/Detic/configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml")
+        cfg.MODEL.WEIGHTS = 'https://dl.fbaipublicfiles.com/detic/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth'
+        cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+        cfg.MODEL.ROI_BOX_HEAD.ZEROSHOT_WEIGHT_PATH = 'rand'
+        cfg.MODEL.ROI_HEADS.ONE_CLASS_PER_PROPOSAL = True # For better visualization purpose. Set to False for all classes.
+        # cfg.MODEL.DEVICE='cpu' # uncomment this to use cpu-only mode.
+        self.predictor = DefaultPredictor(cfg)
 
     def predict(self, img):
         super().predict(img)
@@ -48,7 +47,7 @@ class Detectron(Object_Detector):
         instances = self.results["instances"]
 
         box_bounds = instances.pred_boxes.tensor
-        features = torch.zeros(self.img.shape[:2] + (len(instances),)).to(self.device)
+        features = torch.zeros(self.input.shape[:2] + (len(instances),)).to(self.device)
         for i in range(len(instances)):
             t = box_bounds[i].to(dtype=torch.long)
             features[t[1] : t[3], t[0] : t[2], i] = 1
