@@ -3,3 +3,4 @@ detectron2/*
 detectron2_/*
 detic/*
 CenterNet/*
+third_party/*

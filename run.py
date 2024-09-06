@@ -4,8 +4,10 @@ import cv2
 import numpy as np
 
 from omegaconf import DictConfig, OmegaConf
-import ultralytics
+# import ultralytics
 from detectors import detic
+from detectors.obj_detector import Object_Detector
+
 
 
 def segment_all_imgs(path: Path, detector, outpath, task):
@@ -30,11 +32,15 @@ def segment_all_imgs(path: Path, detector, outpath, task):
 
 
 if __name__ == "__main__":
+    
     img = cv2.imread("resized38.png")
 
-    obj_det = detic.Detectron(True, obj_classes=[41, 39])
-
-    mask = obj_det.get_feature(img)
-    mask = np.expand_dims(mask, -1)
-    cv2.imshow("1", np.where(mask, img, np.zeros(img.shape)))
-    cv2.waitKey(0)
+    obj_det = detic.Detectron(to_tensor=False)
+    
+    obj_det.predict(img)
+    mask = obj_det.get_mask_feature()
+    union_mask = obj_det.joint_feature(mask)
+    masked_img = obj_det.get_masked_img(union_mask)
+    # mask = np.expand_dims(mask, -1)
+    cv2.imwrite("output.jpg", masked_img)
+    # cv2.waitKey(0)

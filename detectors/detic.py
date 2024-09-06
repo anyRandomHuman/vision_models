@@ -1,21 +1,21 @@
 import numpy as np
 import cv2
-import sys
-from obj_detector import Object_Detector
-sys.path.insert(0, 'Detectron2')
 
-from Detectron2.detectron2 import model_zoo
-from Detectron2.detectron2.engine import DefaultPredictor
-from Detectron2.detectron2.config import get_cfg
-from Detectron2.detectron2.utils.visualizer import Visualizer
-from Detectron2.detectron2.data import MetadataCatalog
+from detectors.obj_detector import Object_Detector
+
+from detectron2 import model_zoo
+from detectron2.engine import DefaultPredictor
+from detectron2.config import get_cfg
+from detectron2.utils.visualizer import Visualizer
+from detectron2.data import MetadataCatalog
 import torch
 
-
-sys.path.insert(0, 'Detic/third_party/CenterNet2/')
-from centernet.config import add_centernet_config
-from Detic.detic.config import add_detic_config
-from Detic.detic.modeling.utils import reset_cls_test
+# import sys
+# sys.path.insert(0, '../third_party/CenterNet2/')
+from third_party.CenterNet2.centernet.config import add_centernet_config
+# from ...centernet.config import add_centernet_config
+from third_party.Detic.detic.config import add_detic_config
+from third_party.Detic.detic.modeling.utils import reset_cls_test
 cup_pred_class = 41
 stacked_cups_class = 39
 BOX_FEATURE = "box"
@@ -24,12 +24,11 @@ MASK_FEATURE = "mask"
 
 class Detectron(Object_Detector):
     def __init__(
-        self,  obj_classes=[cup_pred_class, stacked_cups_class], to_tensor=False,
+        self,path='', to_tensor=False,
         device="cuda",
     ):
-        super.__init__(to_tensor, device)
+        super().__init__(path=path, to_tensor=to_tensor, device=device)
         self.cfg = get_cfg()
-        self.obj_classes = obj_classes
         self.cfg.merge_from_file(
             model_zoo.get_config_file(
                 "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
@@ -42,23 +41,27 @@ class Detectron(Object_Detector):
         self.predictor = DefaultPredictor(self.cfg)
 
     def predict(self, img):
-        self.img = img
+        super().predict(img)
         self.results = self.predictor(img)
 
     def get_box_feature(self):
         instances = self.results["instances"]
 
         box_bounds = instances.pred_boxes.tensor
-        features = torch.zeros((len(instances),) + self.img.shape[:2]).cuda()
+        features = torch.zeros(self.img.shape[:2] + (len(instances),)).to(self.device)
         for i in range(len(instances)):
             t = box_bounds[i].to(dtype=torch.long)
-            features[i, t[1] : t[3], t[0] : t[2]] = 1
+            features[t[1] : t[3], t[0] : t[2], i] = 1
 
         return features
 
     def get_mask_feature(self):
         instances = self.results["instances"]
-        features = instances.pred_masks
+        features = instances.pred_masks.permute((1,2,0))
+        if not self.to_tensor:
+            features = features.cpu().numpy()
+        else:
+            features = features.to(self.device)
         return features
 
 

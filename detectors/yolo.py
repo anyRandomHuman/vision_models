@@ -1,16 +1,19 @@
 from ultralytics import YOLO
 import torch
 import numpy as np
+from obj_detector import Object_Detector
 
 
-class Yolo_Detrector:
+class Yolo_Detrector(Object_Detector):
     def __init__(self, path, to_tensor, device) -> None:
+        super().__init__(to_tensor, device)
+        
         self.model = YOLO(path)
         self.to_tensor = to_tensor
         self.device = device
 
     def predict(self, img):
-        self.img = img
+        super().predict(img)
         self.prediction = self.model.predict(img)
 
     def track(self, img):

@@ -11,17 +11,21 @@ class Object_Detector(ABC):
         self.device = device
 
     @abstractmethod
-    def predict(self, img): ...
+    def predict(self, img): 
+        self.input = img
 
     @abstractmethod
     def get_box_feature(self): ...
+    """
+    should return shape of [h, w, num_obj]
+    """
 
     @abstractmethod
     def get_mask_feature(self): ...
 
     def joint_feature(self, features):
         if self.to_tensor:
-            joint_mask = torch.zeros(features.shape[:-1])
+            joint_mask = torch.zeros(features.shape[:-1]).to(self.device)
             for i in range(features.shape[-1]):
                 joint_mask = torch.logical_or(joint_mask, features[:, :, i])
         else:
@@ -38,12 +42,13 @@ class Object_Detector(ABC):
         if self.to_tensor:
             img = torch.where(
             torch.unsqueeze(feature, -1).repeat_interleave(3, -1),
-            self.input,
-            np.zeros(self.img.shape),
+            torch.from_numpy(self.input).to(self.device),
+            torch.zeros(self.input.shape).to(self.device),
         )
-        img = np.where(
-            np.expand_dims(feature, -1).repeat(3, -1),
-            self.img,
-            np.zeros(self.img.shape),
-        )
+        else:
+            img = np.where(
+                np.expand_dims(feature, -1).repeat(3, -1),
+                self.input,
+                np.zeros(self.input.shape),
+            )
         return img
