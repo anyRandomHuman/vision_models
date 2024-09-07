@@ -22,8 +22,6 @@ class Yolo_Detrector(Object_Detector):
 
     def get_mask_feature(self):
         # no mask, return box instead
-        # p = self.prediction[0]
-        # return p.masks.data
         return self.get_box_feature()
 
     def get_box_feature(self):
