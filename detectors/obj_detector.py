@@ -5,17 +5,22 @@ from abc import ABC, abstractmethod
 
 class Object_Detector(ABC):
     @abstractmethod
-    def __init__(self, path, to_tensor=False,
-        device="cuda",) -> None: 
+    def __init__(
+        self,
+        path,
+        to_tensor=False,
+        device="cuda",
+    ) -> None:
         self.to_tensor = to_tensor
         self.device = device
 
     @abstractmethod
-    def predict(self, img): 
+    def predict(self, img):
         self.input = img
 
     @abstractmethod
     def get_box_feature(self): ...
+
     """
     should return shape of [h, w, num_obj]
     """
@@ -41,10 +46,10 @@ class Object_Detector(ABC):
 
         if self.to_tensor:
             img = torch.where(
-            torch.unsqueeze(feature, -1).repeat_interleave(3, -1),
-            torch.from_numpy(self.input).to(self.device),
-            torch.zeros(self.input.shape).to(self.device),
-        )
+                torch.unsqueeze(feature, -1).repeat_interleave(3, -1),
+                torch.from_numpy(self.input).to(self.device),
+                torch.zeros(self.input.shape).to(self.device),
+            )
         else:
             img = np.where(
                 np.expand_dims(feature, -1).repeat(3, -1),

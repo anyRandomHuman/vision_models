@@ -10,6 +10,7 @@ from omegaconf import DictConfig, OmegaConf
 # from detectors import detic
 from detectors.obj_detector import Object_Detector
 from detectors.yolo import Yolo_Detrector
+from detectors.fast_sam import FastSAMDetector
 import h5py
 import time
 from tqdm import tqdm
@@ -75,7 +76,9 @@ def predict_imgs_from_hdf5(
 
 if __name__ == "__main__":
 
-    img = cv2.imread("0.png")
+    img = cv2.imread("138.jpg")
+    img = cv2.resize(img, (128, 256))
+    # cv2.imwrite("138.jpg", img)
 
     # obj_det = detic.Detectron(
     #     to_tensor=False,
@@ -91,12 +94,23 @@ if __name__ == "__main__":
     #     ],
     # )
 
-    obj_det = Yolo_Detrector(
-        path="/home/alr_admin/david/praktikum/d3il_david/detector_models/yolov8n.pt",
-        to_tensor=False,
-        device="cuda",
+    # obj_det = Yolo_Detrector(
+    #     path="/home/alr_admin/david/praktikum/d3il_david/detector_models/yolov8n.pt",
+    #     to_tensor=False,
+    #     device="cuda",
+    # )
+
+    obj_det = FastSAMDetector(imgsz=img.shape[:2])
+
+    obj_det.predict(
+        img,
+        bboxes=[
+            [40, 185, 60, 230],
+            [85, 185, 120, 225],
+            [40, 165, 70, 180],
+            [90, 150, 100, 180],
+        ],
     )
-    obj_det.predict(img)
     mask = obj_det.get_mask_feature()
     union_mask = obj_det.joint_feature(mask)
     output = obj_det.get_masked_img(union_mask)

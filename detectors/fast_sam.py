@@ -22,11 +22,11 @@ class FastSAMDetector(Object_Detector):
 
     def predict(self, img, **kwargs):
         super().predict(img)
-        self.prediction = self.model(input)
+        self.prediction = self.model(self.input)
         self.prediction = self.model.prompt(self.prediction, **kwargs)
 
     def get_box_feature(self):
-        p = self.prediction[0] # type: ignore
+        p = self.prediction[0]  # type: ignore
         num_boxes = p.boxes.shape[0]
 
         features = torch.zeros(p.orig_shape + (num_boxes,), dtype=torch.int32)
@@ -42,11 +42,14 @@ class FastSAMDetector(Object_Detector):
         return features
 
     def get_mask_feature(self):
-        p = self.prediction[0]
-        return p.masks.data
+        p = self.prediction[0].masks.data.to(self.device).permute((1, 2, 0))
+        if not self.to_tensor:
+            p = p.cpu().numpy()
+        return p
 
     def get_bbox(self):
         return self.prediction[0].boxes.xyxy
+
 
 if __name__ == "__main__":
 
@@ -79,4 +82,3 @@ if __name__ == "__main__":
     # cv2.imwrite("test.jpg", img)
     mask = fsam.get_mask_feature()
     joint_mask = fsam.joint_feature(mask)
-    
