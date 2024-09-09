@@ -75,51 +75,18 @@ def predict_imgs_from_hdf5(
 
 
 if __name__ == "__main__":
-
-    img = cv2.imread("138.jpg")
-    img = cv2.resize(img, (128, 256))
-    # cv2.imwrite("138.jpg", img)
-
-    # obj_det = detic.Detectron(
-    #     to_tensor=False,
-    #     classes=[
-    #         "banana",
-    #         "cup",
-    #         "carrot",
-    #         "saucepan",
-    #         "hair_dryer",
-    #         "bolt",
-    #         "hinge",
-    #         "bolt",
-    #     ],
-    # )
-
-    # obj_det = Yolo_Detrector(
-    #     path="/home/alr_admin/david/praktikum/d3il_david/detector_models/yolov8n.pt",
-    #     to_tensor=False,
-    #     device="cuda",
-    # )
-
-    obj_det = FastSAMDetector(imgsz=img.shape[:2])
-
-    obj_det.predict(
-        img,
-        bboxes=[
-            [40, 185, 60, 230],
-            [85, 185, 120, 225],
-            [40, 165, 70, 180],
-            [90, 150, 100, 180],
-        ],
+    from pathlib import Path
+    import h5py
+    import cv2
+    detector = Yolo_Detrector(
+        "models/yolov8n.pt", False, "cuda"
     )
-    mask = obj_det.get_mask_feature()
-    union_mask = obj_det.joint_feature(mask)
-    output = obj_det.get_masked_img(union_mask)
-    # output = obj_det.get_masked_img(masked_img)
-    # output = obj_det.get_visualized_imgs()
-    # mask = np.expand_dims(mask, -1)
-    cv2.imwrite("output0.jpg", output)
-
-    # path = Path('/home/i53/student/qwei/alr/data/pickPlacing/2024_08_05-13_22_36')
-    # outpath = '/home/i53/student/qwei/alr/prediction_results'
-    # detector = detic.Detectron(to_tensor=False)
-    # predict_imgs_from_hdf5(path=path, detector=detector, outpath=outpath, task='pickPlacing')
+    f = h5py.File('imgs.hdf5', 'r')
+    k = list(f.keys())[0]
+    for i,imgcode in enumerate(f[k]):
+        img = cv2.imdecode(imgcode, 1)
+        detector.track(img)
+        feature = detector.get_mask_feature()
+        uf = detector.joint_feature(feature)
+        result = detector.get_masked_img(uf)
+        cv2.imwrite(f'imgs/{i}.jpg', result)

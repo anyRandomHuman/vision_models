@@ -5,20 +5,21 @@ from detectors.obj_detector import Object_Detector
 
 
 class Yolo_Detrector(Object_Detector):
-    def __init__(self, path, to_tensor, device) -> None:
-        super().__init__(path=path, to_tensor=to_tensor, device=device)
+    def __init__(self, path, to_tensor, device, tracker= 'detectors/trackers/bytetrack.yaml') -> None:
+        super().__init__(to_tensor=to_tensor, device=device)
 
         self.model = YOLO(path)
-        self.to_tensor = to_tensor
-        self.device = device
+        self.imgs=[]
+        self.tracker = tracker
 
     def predict(self, img):
         super().predict(img)
         self.prediction = self.model.predict(img)
 
     def track(self, img):
-        self.img = img
-        self.prediction = self.model.track(img, persist=True)
+        self.input = img
+        self.imgs.append(img)
+        self.prediction = self.model.track(source=img, persist=True, tracker=self.tracker)
 
     def get_mask_feature(self):
         # no mask, return box instead
@@ -46,21 +47,7 @@ class Yolo_Detrector(Object_Detector):
         if self.to_tensor:
             return box
         else:
-            return box.numpy(box)
-
-        # def get_masked_img(self):
-        #     return self.prediction[0].plot(
-        #         labels=False, boxes=False, conf=False, probs=False, color_mode="class"
-        #     )
-        # if self.to_tensor:
-        #     feature = torch.from_numpy(feature)
-        # img = np.where(
-        #     np.expand_dims(feature, -1).repeat(3, -1),
-        #     self.img,
-        #     np.zeros(self.img.shape),
-        # )
-
-        return img.astype(np.uint8)
+            return box.cpu().numpy()
 
     def get_img_with_segment(self):
         return self.prediction[0].plot(
@@ -69,17 +56,5 @@ class Yolo_Detrector(Object_Detector):
 
 
 if __name__ == "__main__":
-    import pathlib
 
-    video_dir = pathlib.Path(
-        "/media/alr_admin/Data/atalay/new_data/pickPlacing/2024_08_05-17_09_11/images/Azure_0"
-    )
-    detector = Yolo_Detrector(
-        "/home/alr_admin/david/real_robot/models/yolov10n.pt", False, "cuda"
-    )
-    i = 0
-    for img in sorted(video_dir.iterdir(), key=lambda p: int(p.name.partition(".")[0])):
-        detector.track(img)
-        i += 1
-        if not i % 20:
-            detector.prediction[0].show()
+    pass

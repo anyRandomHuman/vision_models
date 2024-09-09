@@ -1,37 +1,29 @@
 import torch
 import numpy as np
 from sam2.build_sam import build_sam2_video_predictor
+from detectors.obj_detector import Object_Detector
 
 
-class Sam2:
+class Sam2(Object_Detector):
     def __init__(
         self,
         model_cfg="sam2_hiera_l.yaml",
         sam2_checkpoint="detector_models/sam2_hiera_large.pt",
         device="cuda",
+        to_tensor=False
     ) -> None:
+        super().__init__(to_tensor=to_tensor, device=device)
         self.predictor = build_sam2_video_predictor(
             model_cfg, sam2_checkpoint, device=device
         )
         self.id = 0
 
-    def predict(self, path):
-        with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
-            state = self.predictor.init_state(path)
-
-            video_segments = (
-                {}
-            )  # video_segments contains the per-frame segmentation results
-            for (
-                out_frame_idx,
-                out_obj_ids,
-                out_mask_logits,
-            ) in self.predictor.propagate_in_video(state):
-                video_segments[out_frame_idx] = {
-                    out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
-                    for i, out_obj_id in enumerate(out_obj_ids)
-                }
-
+    def predict(self, img, **kwargs):
+        super().predict(img)
+        with torch.inference_mode():
+            self.predictor.set_image(img)
+            masks, _, _ = self.predictor.predict(**kwargs)
+            self.results = masks
     def predict_video(self):
 
         self.video_segments = (
@@ -87,24 +79,3 @@ class Sam2:
             joint_masks.append(joint_mask)
         return joint_masks
 
-    def joint_feature(self, features):
-        if self.to_tensor:
-            joint_mask = torch.zeros(features.shape[:-1])
-            for i in range(features.shape[-1]):
-                joint_mask = torch.logical_or(joint_mask, features[:, :, i])
-        if not self.to_tensor:
-            joint_mask = np.zeros(features.shape[:-1])
-            for i in range(features.shape[-1]):
-                joint_mask = np.logical_or(joint_mask, features[:, :, i])
-        return joint_mask
-
-    def get_masked_img(self, feature):
-        if self.to_tensor:
-            feature = torch.from_numpy(feature)
-        img = np.where(
-            np.expand_dims(feature, -1).repeat(3, -1),
-            self.img,
-            np.zeros(self.img.shape),
-        )
-
-        return img.astype(np.uint8)

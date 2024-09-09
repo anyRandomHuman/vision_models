@@ -14,7 +14,7 @@ class FastSAMDetector(Object_Detector):
         path="/home/alr_admin/david/praktikum/d3il_david/detector_models/FastSAM-x.pt",
         imgsz=(256, 128),
     ) -> None:
-        super().__init__(path=path, to_tensor=to_tensor, device=device)
+        super().__init__(to_tensor=to_tensor, device=device)
         overrides = dict(
             task="segment", mode="predict", model=path, save=False, imgsz=imgsz
         )

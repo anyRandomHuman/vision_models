@@ -4,3 +4,6 @@ detectron2_/*
 detic/*
 CenterNet/*
 third_party/*
+imgs/*
+*.jpg
+*.png

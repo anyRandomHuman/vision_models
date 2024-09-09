@@ -29,7 +29,7 @@ class Detectron(Object_Detector):
         device="cuda",
         classes=None
     ):
-        super().__init__(path=path, to_tensor=to_tensor, device=device)
+        super().__init__(to_tensor=to_tensor, device=device)
         cfg = get_cfg()
         add_centernet_config(cfg)
         add_detic_config(cfg)

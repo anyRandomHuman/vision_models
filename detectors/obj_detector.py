@@ -7,7 +7,6 @@ class Object_Detector(ABC):
     @abstractmethod
     def __init__(
         self,
-        path,
         to_tensor=False,
         device="cuda",
     ) -> None:
