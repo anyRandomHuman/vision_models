@@ -13,10 +13,12 @@ import torch
 # import sys
 # sys.path.insert(0, '../third_party/CenterNet2/')
 from third_party.CenterNet2.centernet.config import add_centernet_config
+
 # from ...centernet.config import add_centernet_config
 from third_party.Detic.detic.config import add_detic_config
 from third_party.Detic.detic.modeling.utils import reset_cls_test
 from third_party.Detic.detic.modeling.text.text_encoder import build_text_encoder
+
 cup_pred_class = 41
 stacked_cups_class = 39
 BOX_FEATURE = "box"
@@ -25,49 +27,56 @@ MASK_FEATURE = "mask"
 
 class Detectron(Object_Detector):
     def __init__(
-        self,path='', to_tensor=False,
+        self,
+        path="https://dl.fbaipublicfiles.com/detic/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth",
+        to_merge="third_party/Detic/configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml",
+        to_tensor=False,
         device="cuda",
-        classes=None
+        classes=None,
     ):
         super().__init__(to_tensor=to_tensor, device=device)
         cfg = get_cfg()
         add_centernet_config(cfg)
         add_detic_config(cfg)
-        cfg.merge_from_file("third_party/Detic/configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml")
-        cfg.MODEL.WEIGHTS = 'https://dl.fbaipublicfiles.com/detic/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth'
+        cfg.merge_from_file(to_merge)
+        cfg.MODEL.WEIGHTS = path
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
-        cfg.MODEL.ROI_BOX_HEAD.ZEROSHOT_WEIGHT_PATH = 'rand'
-        cfg.MODEL.ROI_HEADS.ONE_CLASS_PER_PROPOSAL = True # For better visualization purpose. Set to False for all classes.
+        cfg.MODEL.ROI_BOX_HEAD.ZEROSHOT_WEIGHT_PATH = "rand"
+        cfg.MODEL.ROI_HEADS.ONE_CLASS_PER_PROPOSAL = (
+            True  # For better visualization purpose. Set to False for all classes.
+        )
         # cfg.MODEL.DEVICE='cpu' # uncomment this to use cpu-only mode.
-        
+
         self.predictor = DefaultPredictor(cfg)
-        
-        if classes: 
+
+        if classes:
             self.metadata = MetadataCatalog.get("__unused")
-            self.metadata.thing_classes = classes # Change here to try your own vocabularies!
+            self.metadata.thing_classes = (
+                classes  # Change here to try your own vocabularies!
+            )
             classifier = Detectron._get_clip_embeddings(self.metadata.thing_classes)
         else:
             BUILDIN_CLASSIFIER = {
-                'lvis': 'third_party/Detic/datasets/metadata/lvis_v1_clip_a+cname.npy',
-                'objects365': 'third_party/Detic/datasets/metadata/o365_clip_a+cnamefix.npy',
-                'openimages': 'third_party/Detic/datasets/metadata/oid_clip_a+cname.npy',
-                'coco': 'third_party/Detic/datasets/metadata/coco_clip_a+cname.npy',
+                "lvis": "third_party/Detic/datasets/metadata/lvis_v1_clip_a+cname.npy",
+                "objects365": "third_party/Detic/datasets/metadata/o365_clip_a+cnamefix.npy",
+                "openimages": "third_party/Detic/datasets/metadata/oid_clip_a+cname.npy",
+                "coco": "third_party/Detic/datasets/metadata/coco_clip_a+cname.npy",
             }
 
             BUILDIN_METADATA_PATH = {
-                'lvis': 'lvis_v1_val',
-                'objects365': 'objects365_v2_val',
-                'openimages': 'oid_val_expanded',
-                'coco': 'coco_2017_val',
+                "lvis": "lvis_v1_val",
+                "objects365": "objects365_v2_val",
+                "openimages": "oid_val_expanded",
+                "coco": "coco_2017_val",
             }
 
-            vocabulary = 'lvis' # change to 'lvis', 'objects365', 'openimages', or 'coco'
+            vocabulary = (
+                "lvis"  # change to 'lvis', 'objects365', 'openimages', or 'coco'
+            )
             self.metadata = MetadataCatalog.get(BUILDIN_METADATA_PATH[vocabulary])
             classifier = BUILDIN_CLASSIFIER[vocabulary]
         num_classes = len(self.metadata.thing_classes)
         reset_cls_test(self.predictor.model, classifier, num_classes)
-        
-        
 
     def predict(self, img):
         super().predict(img)
@@ -86,7 +95,7 @@ class Detectron(Object_Detector):
 
     def get_mask_feature(self):
         instances = self.results["instances"]
-        features = instances.pred_masks.permute((1,2,0))
+        features = instances.pred_masks.permute((1, 2, 0))
         if not self.to_tensor:
             features = features.cpu().numpy()
         else:
@@ -94,7 +103,7 @@ class Detectron(Object_Detector):
         return features
 
     @staticmethod
-    def _get_clip_embeddings(vocabulary, prompt='a '):
+    def _get_clip_embeddings(vocabulary, prompt="a "):
         text_encoder = build_text_encoder(pretrain=True)
         text_encoder.eval()
         texts = [prompt + x for x in vocabulary]
@@ -104,7 +113,12 @@ class Detectron(Object_Detector):
     def get_visualized_imgs(self):
         v = Visualizer(self.input, self.metadata)
         out = v.draw_instance_predictions(self.results["instances"].to("cpu"))
-        
-        print([self.metadata.thing_classes[x] for x in self.results["instances"].pred_classes.cpu().tolist()])
-        
+
+        print(
+            [
+                self.metadata.thing_classes[x]
+                for x in self.results["instances"].pred_classes.cpu().tolist()
+            ]
+        )
+
         return out.get_image()
