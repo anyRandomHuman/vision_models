@@ -5,21 +5,31 @@ from detectors.obj_detector import Object_Detector
 
 
 class Yolo_Detrector(Object_Detector):
-    def __init__(self, path, to_tensor, device, tracker= 'detectors/trackers/bytetrack.yaml') -> None:
+    def __init__(
+        self,
+        path,
+        to_tensor,
+        device,
+        tracker="detectors/trackers/bytetrack.yaml",
+        imgsz=(256, 128),
+    ) -> None:
         super().__init__(to_tensor=to_tensor, device=device)
 
         self.model = YOLO(path)
-        self.imgs=[]
+        self.imgs = []
         self.tracker = tracker
+        self.imgsz = imgsz
 
     def predict(self, img):
         super().predict(img)
-        self.prediction = self.model.predict(img)
+        self.prediction = self.model.predict(img, imgsz=self.imgsz)
 
-    def track(self, img):
+    def track(self, img, **kwargs):
         self.input = img
         self.imgs.append(img)
-        self.prediction = self.model.track(source=img, persist=True, tracker=self.tracker)
+        self.prediction = self.model.track(
+            source=img, persist=True, tracker=self.tracker, **kwargs
+        )
 
     def get_mask_feature(self):
         # no mask, return box instead
