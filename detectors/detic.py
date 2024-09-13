@@ -12,12 +12,12 @@ import torch
 
 # import sys
 # sys.path.insert(0, '../third_party/CenterNet2/')
-from third_party.CenterNet2.centernet.config import add_centernet_config
+from centernet.config import add_centernet_config
 
 # from ...centernet.config import add_centernet_config
-from third_party.Detic.detic.config import add_detic_config
-from third_party.Detic.detic.modeling.utils import reset_cls_test
-from third_party.Detic.detic.modeling.text.text_encoder import build_text_encoder
+from detic.config import add_detic_config
+from detic.modeling.utils import reset_cls_test
+from detic.modeling.text.text_encoder import build_text_encoder
 
 cup_pred_class = 41
 stacked_cups_class = 39
@@ -29,7 +29,7 @@ class Detectron(Object_Detector):
     def __init__(
         self,
         path="https://dl.fbaipublicfiles.com/detic/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth",
-        to_merge="third_party/Detic/configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml",
+        to_merge="/home/alr_admin/david/Detic/configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml",
         to_tensor=False,
         device="cuda",
         classes=None,
@@ -45,7 +45,7 @@ class Detectron(Object_Detector):
         cfg.MODEL.ROI_HEADS.ONE_CLASS_PER_PROPOSAL = (
             True  # For better visualization purpose. Set to False for all classes.
         )
-        # cfg.MODEL.DEVICE='cpu' # uncomment this to use cpu-only mode.
+        # cfg.MODEL.DEVICE = "cpu"  # uncomment this to use cpu-only mode.
 
         self.predictor = DefaultPredictor(cfg)
 
@@ -57,10 +57,10 @@ class Detectron(Object_Detector):
             classifier = Detectron._get_clip_embeddings(self.metadata.thing_classes)
         else:
             BUILDIN_CLASSIFIER = {
-                "lvis": "third_party/Detic/datasets/metadata/lvis_v1_clip_a+cname.npy",
-                "objects365": "third_party/Detic/datasets/metadata/o365_clip_a+cnamefix.npy",
-                "openimages": "third_party/Detic/datasets/metadata/oid_clip_a+cname.npy",
-                "coco": "third_party/Detic/datasets/metadata/coco_clip_a+cname.npy",
+                "lvis": "/home/alr_admin/david/Detic/datasets/metadata/lvis_v1_clip_a+cname.npy",
+                "objects365": "/home/alr_admin/david/Detic/datasets/metadata/o365_clip_a+cnamefix.npy",
+                "openimages": "/home/alr_admin/david/Detic/datasets/metadata/oid_clip_a+cname.npy",
+                "coco": "/home/alr_admin/david/Detic/datasets/metadata/coco_clip_a+cname.npy",
             }
 
             BUILDIN_METADATA_PATH = {

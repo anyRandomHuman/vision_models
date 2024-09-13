@@ -2,7 +2,7 @@ dinov2/*
 detectron2/*
 detectron2_/*
 detic/*
-CenterNet/*
+centernet/*
 third_party/*
 imgs/*
 *.jpg

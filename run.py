@@ -10,9 +10,9 @@ from omegaconf import DictConfig, OmegaConf
 from detectors.obj_detector import Object_Detector
 
 # from detectors.detic import Detectron
-from detectors.yolo import Yolo_Detrector
-from detectors.rtdetr import RTDETR_detector
-from detectors.fast_sam import FastSAMDetector
+# from detectors.yolo import Yolo_Detrector
+# from detectors.rtdetr import RTDETR_detector
+# from detectors.fast_sam import FastSAMDetector
 
 # from detectors.sam2 import Sam2
 import h5py
@@ -84,9 +84,12 @@ if __name__ == "__main__":
     import cv2
 
     # detector = Yolo_Detrector("models/yolov8n.pt", False, "cuda")
-    detector = RTDETR_detector(
-        path="models/rtdetr-l.pt", to_tensor=False, device="cuda"
-    )
+    # detector = RTDETR_detector(
+    #     path="models/rtdetr-l.pt", to_tensor=False, device="cuda"
+    # )
+    from detectors.detic import Detectron
+
+    detector = Detectron()
 
     # detector.model.set_classes(["pan", "bowl", "banana", "carrot"])
     # detector = Detectron(to_tensor=False, device="cuda")
@@ -103,7 +106,8 @@ if __name__ == "__main__":
     for i, img_path in enumerate(img_paths[:10]):
         # img = cv2.imdecode(imgcode, 1)
         img = cv2.imread(str(img_path))
-        detector.track(img)
+        # detector.track(img)
+        detector.predict(img)
         # detector.predict(
         #     img,
         #     # bboxes=[
@@ -116,7 +120,7 @@ if __name__ == "__main__":
         feature = detector.get_mask_feature()
         uf = detector.joint_feature(feature)
         result = detector.get_masked_img(uf)
-        # cv2.imwrite(f"imgs/redter_track/{i}.jpg", result)
+        cv2.imwrite(f"imgs/detic/{i}.jpg", result)
 
     # import os
 
