@@ -9,7 +9,11 @@ from omegaconf import DictConfig, OmegaConf
 # import ultralytics
 from detectors.obj_detector import Object_Detector
 
+<<<<<<< HEAD
 # from detectors.detic import Detectron
+=======
+from detectors.detic import Detectron
+>>>>>>> cf8e063944f01b6bb2691d5d06fd3dffcdf667cd
 # from detectors.yolo import Yolo_Detrector
 # from detectors.rtdetr import RTDETR_detector
 # from detectors.fast_sam import FastSAMDetector
@@ -87,25 +91,25 @@ if __name__ == "__main__":
     # detector = RTDETR_detector(
     #     path="models/rtdetr-l.pt", to_tensor=False, device="cuda"
     # )
-    from detectors.detic import Detectron
-
-    detector = Detectron()
 
     # detector.model.set_classes(["pan", "bowl", "banana", "carrot"])
-    # detector = Detectron(to_tensor=False, device="cuda")
+    # 
+    classes=['banana','bowl', 'toy','cup','saucepan','carrot']
+    detector = Detectron(to_tensor=False, device="cuda", to_detect=['banana','bowl', 'toy','cup','saucepan','measuring_cup'])
     # detector = FastSAMDetector(to_tensor=False, device="cuda")
 
-    path = Path(
-        "/media/alr_admin/Data/atalay/new_data/pickPlacing/2024_08_05-13_22_36/images/test"
-    )
 
-    # f = h5py.File("imgs.hdf5", "r")
-    # k = list(f.keys())[0]
-    # for i, imgcode in enumerate(f[k]):
-    img_paths = sorted(Path(path).iterdir(), key=lambda p: int(p.name.split(".")[0]))
-    for i, img_path in enumerate(img_paths[:10]):
-        # img = cv2.imdecode(imgcode, 1)
-        img = cv2.imread(str(img_path))
+
+    f = h5py.File("imgs.hdf5", "r")
+    k = list(f.keys())[0]
+    for i, imgcode in enumerate(f[k]):
+    # path = Path(
+    #     "/home/i53/student/qwei/alr/data/pickPlacing/2024_08_05-13_22_36/imgs.hdf5"
+    # )
+    # img_paths = sorted(Path(path).iterdir(), key=lambda p: int(p.name.split(".")[0]))
+    # for i, img_path in enumerate(img_paths[:10]):
+        img = cv2.imdecode(imgcode, 1)
+        # img = cv2.imread(str(img_path))
         # detector.track(img)
         detector.predict(img)
         # detector.predict(
@@ -117,11 +121,17 @@ if __name__ == "__main__":
         #     #     [90, 150, 100, 180],
         #     # ],
         # )
+        
         feature = detector.get_mask_feature()
         uf = detector.joint_feature(feature)
         result = detector.get_masked_img(uf)
+<<<<<<< HEAD
         cv2.imwrite(f"imgs/detic/{i}.jpg", result)
 
+=======
+        cv2.imwrite(f"imgs/detic_filter/{i}.jpg", result)
+    print(detector.detected_classes)
+>>>>>>> cf8e063944f01b6bb2691d5d06fd3dffcdf667cd
     # import os
 
     # outpath = path.parent / "test"
