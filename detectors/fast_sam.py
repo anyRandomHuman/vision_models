@@ -13,17 +13,28 @@ class FastSAMDetector(Object_Detector):
         device="cuda",
         path="/home/alr_admin/david/praktikum/d3il_david/detector_models/FastSAM-x.pt",
         imgsz=(256, 128),
+        track = False
     ) -> None:
         super().__init__(to_tensor=to_tensor, device=device)
         overrides = dict(
             task="segment", mode="predict", model=path, save=False, imgsz=imgsz
         )
         self.model = FastSAMPredictor(overrides=overrides)
+        self.track = track
+        self.prediction = None
 
     def predict(self, img, **kwargs):
         super().predict(img)
+        if self.track and self.prediction:
+            last_bbox = self.prediction[0].boxes.xywh
+            x = last_bbox[0] + last_bbox[2]/4
+            x1 = last_bbox[0] + 3* last_bbox[2]/4
+            y = last_bbox[1] + last_bbox[3]/4
+            y1 = last_bbox[1] + 3*last_bbox[3]/4
+            kwargs['bboxes'] = [x,x1,y,y1]
         self.prediction = self.model(self.input)
         self.prediction = self.model.prompt(self.prediction, **kwargs)
+
 
     def get_box_feature(self):
         p = self.prediction[0]  # type: ignore

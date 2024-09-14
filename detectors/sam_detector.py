@@ -50,6 +50,8 @@ class Sam:
         if not self.to_tensor:
             masks = masks.cpu().numpy()
         return masks
+    
+    
     def get_box_feature(self, top_n):
         shape = tuple(self.prediction[0]["segmentation"].shape[0:2]) + (top_n,)
         features = np.zeros(shape)
