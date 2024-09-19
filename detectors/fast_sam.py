@@ -2,6 +2,7 @@ from ultralytics.models.fastsam import FastSAMPredictor
 import torch
 import numpy as np
 import cv2
+from ultralytics.models.sam import Predictor as SAMPredictor
 
 from detectors.obj_detector import Object_Detector
 
@@ -13,13 +14,14 @@ class FastSAMDetector(Object_Detector):
         device="cuda",
         path="/home/alr_admin/david/praktikum/d3il_david/detector_models/FastSAM-x.pt",
         imgsz=(256, 128),
-        track = False
+        track=False,
     ) -> None:
         super().__init__(to_tensor=to_tensor, device=device)
         overrides = dict(
             task="segment", mode="predict", model=path, save=False, imgsz=imgsz
         )
         self.model = FastSAMPredictor(overrides=overrides)
+
         self.track = track
         self.prediction = None
 
@@ -27,14 +29,16 @@ class FastSAMDetector(Object_Detector):
         super().predict(img)
         if self.track and self.prediction:
             last_bbox = self.prediction[0].boxes.xywh
-            x = last_bbox[0] + last_bbox[2]/4
-            x1 = last_bbox[0] + 3* last_bbox[2]/4
-            y = last_bbox[1] + last_bbox[3]/4
-            y1 = last_bbox[1] + 3*last_bbox[3]/4
-            kwargs['bboxes'] = [x,x1,y,y1]
+            boxes = []
+            for box in last_bbox:
+                x = int(box[0] + box[2] / 4)
+                x1 = int(box[0] + 3 * box[2] / 4)
+                y = int(box[1] + box[3] / 4)
+                y1 = int(box[1] + 3 * box[3] / 4)
+                boxes.append([x, x1, y, y1])
+            kwargs["bboxes"] = boxes
         self.prediction = self.model(self.input)
         self.prediction = self.model.prompt(self.prediction, **kwargs)
-
 
     def get_box_feature(self):
         p = self.prediction[0]  # type: ignore

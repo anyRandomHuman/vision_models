@@ -8,3 +8,5 @@ imgs/*
 *.jpg
 *.png
 models/*
+*.pt
+yolov8s-world.pt

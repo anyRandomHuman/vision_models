@@ -14,8 +14,8 @@ class Object_Detector(ABC):
         self.device = device
 
     @abstractmethod
-    def predict(self, img):
-        self.input = img
+    def predict(self, input):
+        self.input = input
 
     @abstractmethod
     def get_box_feature(self): ...

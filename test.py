@@ -1,22 +1,17 @@
-# import h5py
+import h5py
+import cv2
+import glob
 
-# path = '/home/i53/student/qwei/alr/data/pickPlacing/2024_08_05-13_22_36/imgs.hdf5'
+# path = "/media/alr_admin/ECB69036B69002EE/Data_less_obs_new_hdf5_downsampled/pickPlacing/2024_08_05-13_22_36/masked_imgs.hdf5"
 
-# f = h5py.File(path, 'r')
+# f = h5py.File(path, "r")
 
 # ks = f.keys()
-# print(ks)
-# print(len(f[list(ks)[0]]))
 
+# img_codes = f[list(ks)[0]]
+# for i, img_code in enumerate(img_codes):
+#     img = cv2.imdecode(img_code, 1)
+#     cv2.imwrite(f"imgs/{i}.jpg", img)
 
-def test(b, a=None, **kwargs):
-    if b:
-        a = 1
-        test1(a=a, **kwargs)
-    else:
-        test1(**kwargs)
-
-def test1(a=2):
-    print(a)
-
-test(a=0, b =0)
+imgs = glob.glob("imgs/*.jpg")
+print(imgs[-2:])

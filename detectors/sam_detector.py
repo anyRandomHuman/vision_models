@@ -21,25 +21,32 @@ class Sam:
         path="/home/alr_admin/david/praktikum/d3il_david/detector_models/sam_vit_b.pth",
         model_type="vit_b",
         sort="predicted_iou",
-        prompt=True
+        prompt=True,
+        track = False
     ):
         self.to_tensor = to_tensor
         self.sam = sam_model_registry[model_type](checkpoint=path)
         self.sam.to(device=device)
+        self.device = device
+        self.prompt = prompt
         if not prompt:
             self.mask_generator = SamAutomaticMaskGenerator(self.sam)
         else:
             self.mask_generator = SamPredictor(self.sam)
         self.sort = sort
+        self.track = track
 
     def predict(self, img):
         self.img = img
         outputs = self.mask_generator.generate(img)
         self.prediction = sorted(outputs, key=(lambda x: x[self.sort]), reverse=True)
 
-    def predict_with_boxes(self, img, boxes:torch.Tensor):
+    def predict_with_boxes(self, img, boxes: torch.Tensor):
         self.img = img
-        transformed_boxes = self.sam.transform.apply_boxes_torch(boxes, img.shape[:2])
+        self.mask_generator.set_image(img)
+        transformed_boxes = self.mask_generator.transform.apply_boxes_torch(
+            boxes, img.shape[:2]
+        ).to(self.device)
         masks, _, _ = self.mask_generator.predict_torch(
             point_coords=None,
             point_labels=None,
@@ -50,8 +57,7 @@ class Sam:
         if not self.to_tensor:
             masks = masks.cpu().numpy()
         return masks
-    
-    
+
     def get_box_feature(self, top_n):
         shape = tuple(self.prediction[0]["segmentation"].shape[0:2]) + (top_n,)
         features = np.zeros(shape)
@@ -60,9 +66,6 @@ class Sam:
             return features
         for i in range(top_n):
             ann = self.prediction[i]
-
-            if ann["area"] > 1500 or ann["area"] < 100:
-                continue
             b = ann["bbox"]
             for j in range(len(b)):
                 b[j] = int(b[j])
@@ -72,10 +75,14 @@ class Sam:
             features = torch.from_numpy(features).int()
         return features
 
-    def get_feature(self, top_n):
-        if top_n == -1:
-            top_n = len(self.prediction)
-        shape = tuple(self.prediction[0]["segmentation"].shape[0:2]) + (top_n,)
+    def get_mask_feature(self):
+
+        top_n = len(self.prediction)
+        if self.prompt:
+            shape = tuple(self.prediction.shape[-2:]) + (top_n,)
+        else:
+            shape = tuple(self.prediction[0]["segmentation"].shape[0:2]) + (top_n,)
+
         features = np.zeros(shape)
 
         if not len(self.prediction):
@@ -85,11 +92,19 @@ class Sam:
         while found < top_n and j < len(self.prediction):
             ann = self.prediction[j]
             j += 1
-            if ann["area"] > 2500 or ann["area"] < 50:
-                continue
             found += 1
-            m = ann["segmentation"]
-            features[m, found - 1] = 1
+            
+                
+            if self.prompt:
+                if self.track:
+                    torch.find
+                ann = ann.squeeze().cpu().numpy()
+                features[ann, found - 1] = 1
+                
+                    
+            else:
+                m = ann["segmentation"]
+                features[m, found - 1] = 1
         if self.to_tensor:
             features = torch.from_numpy(features).int()
         return features

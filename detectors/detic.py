@@ -2,8 +2,6 @@ import numpy as np
 import cv2
 
 from detectors.obj_detector import Object_Detector
-
-from detectron2 import model_zoo
 from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 from detectron2.utils.visualizer import Visualizer
@@ -33,7 +31,7 @@ class Detectron(Object_Detector):
         to_tensor=False,
         device="cuda",
         classes=None,
-        to_detect = None
+        to_detect=None,
     ):
         super().__init__(to_tensor=to_tensor, device=device)
         cfg = get_cfg()
@@ -78,23 +76,24 @@ class Detectron(Object_Detector):
             classifier = BUILDIN_CLASSIFIER[vocabulary]
         num_classes = len(self.metadata.thing_classes)
         reset_cls_test(self.predictor.model, classifier, num_classes)
-        
+
         if to_detect:
-            self.to_detect = list(map(lambda x: self.metadata.thing_classes.index(x), to_detect))
+            self.to_detect = list(
+                map(lambda x: self.metadata.thing_classes.index(x), to_detect)
+            )
         else:
             self.to_detect = []
-        
+
         self.detected_classes = set()
 
     def predict(self, img, **kwargs):
         super().predict(img)
         self.results = self.predictor(img)
-        pred_classes = self.results['instances'].pred_classes.cpu().tolist()
+        pred_classes = self.results["instances"].pred_classes.cpu().tolist()
         class_names = self.metadata.thing_classes
         pred_class_names = set(map(lambda x: class_names[x], pred_classes))
-        
-        self.detected_classes=self.detected_classes.union(pred_class_names)
-        
+
+        self.detected_classes = self.detected_classes.union(pred_class_names)
 
     def get_box_feature(self):
         instances = self.results["instances"]
@@ -109,9 +108,16 @@ class Detectron(Object_Detector):
 
     def get_mask_feature(self):
         instances = self.results["instances"]
-        
+
         if len(self.to_detect):
-            features = torch.concatenate([instances[i].pred_masks for i in range(len(instances)) if instances[i].pred_classes[0] in self.to_detect], 0)
+            features = torch.concatenate(
+                [
+                    instances[i].pred_masks
+                    for i in range(len(instances))
+                    if instances[i].pred_classes[0] in self.to_detect
+                ],
+                0,
+            )
         else:
             features = instances.pred_masks
         features = features.permute((1, 2, 0))
